@@ -1,7 +1,6 @@
 <template>
     <section>
         <div class="alert alert-success" v-show="showSuccessMessage" role="alert"> The product has been created successfully! </div>
-        <div class="alert alert-danger" v-show="showSystemErrorMessage" role="alert"> Application error contact with your system administrator ! </div>
          <div class="alert alert-danger" v-show="showErrorMessage" role="alert">
              <h4 class="alert-heading">Validation failed !</h4>
              <ul v-for="(error,index) in errorMessages">
@@ -32,7 +31,7 @@
                         <h6 class="m-0 font-weight-bold text-primary">Media</h6>
                     </div>
                     <div class="card-body border">
-                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions"  @vdropzone-success="imageUploadSuccess"></vue-dropzone>
+                        <vue-dropzone ref="myVueDropzone" id="dropzone" :options="dropzoneOptions" @vdropzone-success="imageUploadSuccess"></vue-dropzone>
                     </div>
                 </div>
             </div>
@@ -50,7 +49,7 @@
                                     <select v-model="item.option" class="form-control">
                                         <option v-for="variant in variants"
                                                 :value="variant.id">
-                                            {{ variant.title }}
+                                            {{ variant.title }} {{ item.selected_id }}
                                         </option>
                                     </select>
                                 </div>
@@ -99,7 +98,7 @@
             </div>
         </div>
 
-        <button @click="saveProduct" type="submit" class="btn btn-lg btn-primary">Save</button>
+        <button @click="updateProduct" type="submit" class="btn btn-lg btn-primary">Update</button>
         <button type="button" class="btn btn-secondary btn-lg">Cancel</button>
     </section>
 </template>
@@ -118,24 +117,22 @@ export default {
         variants: {
             type: Array,
             required: true
-        }
+        },
+        product: {
+            type: Object,
+            required: true
+        },
     },
     data() {
         return {
             showSuccessMessage : false,
             showErrorMessage : false,
-            showSystemErrorMessage: false,
             errorMessages: [],
-            product_name: '',
-            product_sku: '',
-            description: '',
+            product_name: this.product.title,
+            product_sku: this.product.sku,
+            description: this.product.description,
             images: [],
-            product_variant: [
-                {
-                    option: this.variants[0].id,
-                    tags: []
-                }
-            ],
+            product_variant: [],
             product_variant_prices: [],
             dropzoneOptions: {
                 url: '/image-store',
@@ -160,7 +157,9 @@ export default {
                 tags: []
             })
         },
-
+        imageUploadSuccess(file, response) {
+            this.images.push(response);
+        },
         // check the variant and render all the combination
         checkVariant() {
             let tags = [];
@@ -169,18 +168,14 @@ export default {
                 tags.push(item.tags);
             })
 
-            this.getCombn(tags).forEach(item => {
+            this.getCombn(tags).forEach((item,key) => {
                 this.product_variant_prices.push({
                     title: item,
-                    price: 0,
-                    stock: 0
+                    price: this.product.variants[key].price,
+                    stock: this.product.variants[key].stock,
+                    id :  this.product.variants[key].id
                 })
             })
-        },
-
-        //images upload response
-        imageUploadSuccess(file, response) {
-            this.images.push(response);
         },
 
         // combination algorithm
@@ -196,9 +191,8 @@ export default {
             return ans;
         },
 
-        // store product into database
-        saveProduct() {
-
+        // update product into database
+        updateProduct() {
             let product = {
                 title: this.product_name,
                 sku: this.product_sku,
@@ -207,11 +201,9 @@ export default {
                 product_variant: this.product_variant,
                 product_variant_prices: this.product_variant_prices
             }
-
             this.showErrorMessage = false;
             this.errorMessages = [];
-
-            axios.post('/product', product).then(response => {
+            axios.put('/product/' + this.product.id, product).then( response => {
                 if (!response.data.success) {
                     if (response.data.errors != undefined){
                         for (const [key, value] of Object.entries(response.data.errors)) {
@@ -225,29 +217,64 @@ export default {
                     }
                 } else {
                     this.showSuccessMessage = true;
-                    this.product_name = '';
-                    this.product_sku = '';
-                    this.description = '';
-                    this.images = [];
-                    this.product_variant = [
-                        {
-                            option: this.variants[0].id,
-                            tags: []
-                        }
-                    ];
-                    this.$refs.myVueDropzone.removeAllFiles()
-                    this.product_variant_prices = [];
                     setTimeout(() => this.showSuccessMessage = false, 5000)
                 }
             }).catch(error => {
-                this.showSystemErrorMessage = true;
-                setTimeout(() => this.showSystemErrorMessage = false, 5000)
+               this.showSystemErrorMessage = true;
+               setTimeout(() => this.showSystemErrorMessage = false, 5000)
+            })
+        }
+    },
+    mounted() {
+
+        // for 1st varinat
+        let tagOne = [];
+        let tagTwo = [];
+        let tagThree = [];
+
+        this.product.variants.map((varint) => {
+            console.log(varint);
+            if(!tagOne.includes(varint.one.variant) && varint.one.variant != undefined  ){
+                tagOne.push(varint.one.variant);
+            }
+            if(!tagTwo.includes(varint.two.variant) && varint.two.variant != undefined ){
+                tagTwo.push(varint.two.variant);
+            }
+            if(!tagThree.includes(varint.three.variant) && varint.three.variant != undefined ){
+                tagThree.push(varint.three.variant);
+            }
+        })
+
+        if(tagOne.length > 0 ) {
+            this.product_variant.push({
+                option: this.product.variants[0].one.variant_id,
+                tags: tagOne
             })
         }
 
+        if(tagTwo.length > 0 ) {
+            this.product_variant.push({
+                option: this.product.variants[0].two.variant_id,
+                tags: tagTwo
+            })
+        }
 
-    },
-    mounted() {
+        if(tagThree.length > 0 ) {
+            this.product_variant.push({
+                option: this.product.variants[0].three.variant_id,
+                tags: tagThree
+            })
+        }
+
+        this.product.images.map((image) => {
+            console.log(image)
+            var file = { size: 102400, name: "Product Images", type: "image/png" };
+            var url = '/storage/'+image.file_path;
+            this.images.push(image.file_path);
+            this.$refs.myVueDropzone.manuallyAddFile(file, url);
+        })
+
+        this.checkVariant();
         console.log('Component mounted.')
     }
 }

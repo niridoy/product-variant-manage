@@ -1,5 +1,11 @@
 @extends('layouts.app')
 
+<style>
+    .pagination {
+        float: right;
+    }
+</style>
+
 @section('content')
 
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -13,9 +19,12 @@
                 <div class="col-md-2">
                     <input type="text" name="title" placeholder="Product Title" class="form-control">
                 </div>
-                <div class="col-md-2">
-                    <select name="variant" id="" class="form-control">
-
+                <div class="col-md-2 d-flex">
+                    <select name="variant" id="" style="width: 100%" class="form-control">
+                        <option value="">Select Variant</option>
+                        @foreach ($ProductVariantNames as $ProductVariant)
+                            <option name="{{ $ProductVariant->variant }}" id=""> {{ $ProductVariant->variant }} </option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -51,35 +60,36 @@
                     </thead>
 
                     <tbody>
+                        @foreach ($Products as $Product)
+                            <tr>
+                                <td>{{ $Product->id }}</td>
+                                <td>{{ $Product->title }}<br> Created at : {{ $Product->formated_created_date }} </td>
+                                <td width="40%">{{ $Product->description }}</td>
+                                <td>
 
-                    <tr>
-                        <td>1</td>
-                        <td>T-Shirt <br> Created at : 25-Aug-2020</td>
-                        <td>Quality product in low cost</td>
-                        <td>
-                            <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant">
-
-                                <dt class="col-sm-3 pb-0">
-                                    SM/ Red/ V-Nick
-                                </dt>
-                                <dd class="col-sm-9">
-                                    <dl class="row mb-0">
-                                        <dt class="col-sm-4 pb-0">Price : {{ number_format(200,2) }}</dt>
-                                        <dd class="col-sm-8 pb-0">InStock : {{ number_format(50,2) }}</dd>
-                                    </dl>
-                                </dd>
-                            </dl>
-                            <button onclick="$('#variant').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ route('product.edit', 1) }}" class="btn btn-success">Edit</a>
-                            </div>
-                        </td>
-                    </tr>
-
+                                        <dl class="row mb-0" style="height: 80px; overflow: hidden" id="variant{{ $Product->id }}">
+                                            @foreach ($Product->variants as $variant)
+                                                <dt class="col-sm-3 pb-0">
+                                                    {{ $variant->one->variant }} / {{ $variant->two->variant }} / {{ $variant->three->variant  }}
+                                                </dt>
+                                            <dd class="col-sm-9">
+                                                <dl class="row mb-0">
+                                                    <dt class="col-sm-4 pb-0">Price : {{ number_format($variant->price,2) }}</dt>
+                                                    <dd class="col-sm-8 pb-0">InStock : {{ $variant->stock }}</dd>
+                                                </dl>
+                                            </dd>
+                                            @endforeach
+                                        </dl>
+                                    <button onclick="$('#variant{{ $Product->id }}').toggleClass('h-auto')" class="btn btn-sm btn-link">Show more</button>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('product.edit', $Product->id) }}" class="btn btn-success">Edit</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
                     </tbody>
-
                 </table>
             </div>
 
@@ -87,11 +97,11 @@
 
         <div class="card-footer">
             <div class="row justify-content-between">
-                <div class="col-md-6">
-                    <p>Showing 1 to 10 out of 100</p>
+                <div class="col-md-4">
+                    <p>Showing {{ $Products->currentPage() * 2 - 1   }} to {{ $Products->currentPage() * 2 }}  out of  {{ $Products->total() }} </p>
                 </div>
-                <div class="col-md-2">
-
+                <div class="col-md-8 text-right">
+                    {{ $Products->links() }}
                 </div>
             </div>
         </div>
