@@ -2326,6 +2326,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
+//
 
 
 
@@ -2385,6 +2386,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         tags: []
       });
     },
+    //image upload response
     imageUploadSuccess: function imageUploadSuccess(file, response) {
       this.images.push(response);
     },
@@ -2467,66 +2469,69 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
           return _this2.showSystemErrorMessage = false;
         }, 5000);
       });
+    },
+    loadProduct: function loadProduct() {
+      var _this3 = this;
+
+      // for 1st varinat
+      var tagOne = [];
+      var tagTwo = [];
+      var tagThree = [];
+      this.product.variants.map(function (varint) {
+        console.log(varint);
+
+        if (!tagOne.includes(varint.one.variant) && varint.one.variant != undefined) {
+          tagOne.push(varint.one.variant);
+        }
+
+        if (!tagTwo.includes(varint.two.variant) && varint.two.variant != undefined) {
+          tagTwo.push(varint.two.variant);
+        }
+
+        if (!tagThree.includes(varint.three.variant) && varint.three.variant != undefined) {
+          tagThree.push(varint.three.variant);
+        }
+      });
+
+      if (tagOne.length > 0) {
+        this.product_variant.push({
+          option: this.product.variants[0].one.variant_id,
+          tags: tagOne
+        });
+      }
+
+      if (tagTwo.length > 0) {
+        this.product_variant.push({
+          option: this.product.variants[0].two.variant_id,
+          tags: tagTwo
+        });
+      }
+
+      if (tagThree.length > 0) {
+        this.product_variant.push({
+          option: this.product.variants[0].three.variant_id,
+          tags: tagThree
+        });
+      }
+
+      this.product.images.map(function (image) {
+        console.log(image);
+        var file = {
+          size: 102400,
+          name: "Product Images",
+          type: "image/png"
+        };
+        var url = '/storage/' + image.file_path;
+
+        _this3.images.push(image.file_path);
+
+        _this3.$refs.myVueDropzone.manuallyAddFile(file, url);
+      });
+      this.checkVariant();
     }
   },
   mounted: function mounted() {
-    var _this3 = this;
-
-    // for 1st varinat
-    var tagOne = [];
-    var tagTwo = [];
-    var tagThree = [];
-    this.product.variants.map(function (varint) {
-      console.log(varint);
-
-      if (!tagOne.includes(varint.one.variant) && varint.one.variant != undefined) {
-        tagOne.push(varint.one.variant);
-      }
-
-      if (!tagTwo.includes(varint.two.variant) && varint.two.variant != undefined) {
-        tagTwo.push(varint.two.variant);
-      }
-
-      if (!tagThree.includes(varint.three.variant) && varint.three.variant != undefined) {
-        tagThree.push(varint.three.variant);
-      }
-    });
-
-    if (tagOne.length > 0) {
-      this.product_variant.push({
-        option: this.product.variants[0].one.variant_id,
-        tags: tagOne
-      });
-    }
-
-    if (tagTwo.length > 0) {
-      this.product_variant.push({
-        option: this.product.variants[0].two.variant_id,
-        tags: tagTwo
-      });
-    }
-
-    if (tagThree.length > 0) {
-      this.product_variant.push({
-        option: this.product.variants[0].three.variant_id,
-        tags: tagThree
-      });
-    }
-
-    this.product.images.map(function (image) {
-      console.log(image);
-      var file = {
-        size: 102400,
-        name: "Product Images",
-        type: "image/png"
-      };
-      var url = '/storage/' + image.file_path;
-
-      _this3.images.push(image.file_path);
-
-      _this3.$refs.myVueDropzone.manuallyAddFile(file, url);
-    });
-    this.checkVariant();
+    this.loadProduct();
     console.log('Component mounted.');
   }
 });
@@ -51349,6 +51354,23 @@ var render = function() {
         attrs: { role: "alert" }
       },
       [_vm._v(" The product has been created successfully! ")]
+    ),
+    _vm._v(" "),
+    _c(
+      "div",
+      {
+        directives: [
+          {
+            name: "show",
+            rawName: "v-show",
+            value: _vm.showSystemErrorMessage,
+            expression: "showSystemErrorMessage"
+          }
+        ],
+        staticClass: "alert alert-danger",
+        attrs: { role: "alert" }
+      },
+      [_vm._v(" Application error contact with your system administrator ! ")]
     ),
     _vm._v(" "),
     _c(

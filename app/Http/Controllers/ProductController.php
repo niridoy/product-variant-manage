@@ -42,69 +42,6 @@ class ProductController extends Controller
         return view('products.index',compact('Products','ProductVariantNames'));
     }
 
-    public function productFilter($request) {
-        if ($request->variant != null) {
-            $ProductVariantIds = ProductVariant::distinct('variant')
-            ->where('variant','like', $request->variant)
-            ->pluck('id');
-        } else {
-            $ProductVariantIds  = [];
-        }
-
-        return Product::with(['variants' => function($query) use ($ProductVariantIds,$request) {
-            $query->when(count($ProductVariantIds) > 0,function($query) use ($ProductVariantIds) {
-                $query->whereIn('id',ProductVariantPrice::select('id')
-                    ->whereIn('product_variant_one',$ProductVariantIds)
-                    ->orWhereIn('product_variant_two',$ProductVariantIds)
-                    ->orWhereIn('product_variant_three',$ProductVariantIds)
-                    ->pluck('id')
-                );
-            })
-            ->when($request->price_from && $request->price_to,function($query) use ($request) {
-                $query->wherebetween('price',[(int)$request->price_from,(int)$request->price_to]);
-            })
-            ->when($request->price_from || $request->price_to,function($query) use ($request) {
-                if ($request->price_to) {
-                    $query->where('price','<=',$request->price_to);
-                } else {
-                    $query->where('price','>=',$request->price_from);
-                }
-            })
-            ->when($request->date,function($query) use ($request) {
-                $query->whereDate('created_at',Carbon::parse($request->date)->format('Y-m-d'));
-            });
-        }])
-        ->when($request->title,function($query) use($request) {
-            $query->where('title','like', '%' . $request->title . '%');
-        })
-        ->when(isset($ProductVariantIds) || $request->has('price_from') || $request->has('price_to') ,function($query) use($ProductVariantIds,$request) {
-            $query->whereHas('variants',function($query) use ($ProductVariantIds,$request) {
-                $query->when(count($ProductVariantIds) > 0 ,function($query) use ($ProductVariantIds) {
-                    $query->whereIn('id',ProductVariantPrice::select('id')
-                        ->whereIn('product_variant_one',$ProductVariantIds)
-                        ->orWhereIn('product_variant_two',$ProductVariantIds)
-                        ->orWhereIn('product_variant_three',$ProductVariantIds)
-                        ->pluck('id')
-                    );
-                })
-                ->when($request->price_from && $request->price_to,function($query) use ($request) {
-                    $query->wherebetween('price',[(int)$request->price_from,(int)$request->price_to]);
-                })
-                ->when($request->price_from || $request->price_to,function($query) use ($request) {
-                    if ($request->price_to) {
-                        $query->where('price','<=',$request->price_to);
-                    } else {
-                        $query->where('price','>=',$request->price_from);
-                    }
-                })
-                ->when($request->date,function($query) use ($request) {
-                    $query->whereDate('created_at',Carbon::parse($request->date)->format('Y-m-d'));
-                });
-            });
-        })
-        ->paginate(2);
-    }
-
     /**
      * Show the form for creating a new resource.
      *
@@ -145,11 +82,13 @@ class ProductController extends Controller
 
         try {
             DB::beginTransaction();
-                $Product = Product::create([
+
+            $Product = Product::create([
                     'title' => $request->title,
                     'sku' => $request->sku,
                     'description' => $request->description,
                 ]);
+
                 $ProductVariant = Collect($request->product_variant);
 
                 for ($i=0; $i < count($request->product_variant_prices); $i++) {
@@ -257,13 +196,15 @@ class ProductController extends Controller
 
         try {
             DB::beginTransaction();
+
                 $Product->update([
                     'title' => $request->title,
                     'sku' => $request->sku,
                     'description' => $request->description,
                 ]);
+
                 $ProductVariant = Collect($request->product_variant);
-                // return $ProductVariant;
+
                 for ($i=0; $i < count($request->product_variant_prices); $i++) {
                     $ProductVariantDetails = $request->product_variant_prices[$i];
                     $Variants = explode('/',$ProductVariantDetails['title']);
@@ -295,6 +236,7 @@ class ProductController extends Controller
                             }
                         }
                     }
+
                     $ProductVariantPrice->product_id = $Product->id;
                     $ProductVariantPrice->price = $ProductVariantDetails['price'];
                     $ProductVariantPrice->stock = $ProductVariantDetails['stock'];
@@ -342,5 +284,69 @@ class ProductController extends Controller
             Storage::disk('public')->put($file_name , file_get_contents($request->file));
             return  $file_name ;
         }
+    }
+
+    public function productFilter($request) {
+
+        if ($request->variant != null) {
+            $ProductVariantIds = ProductVariant::distinct('variant')
+            ->where('variant','like', $request->variant)
+            ->pluck('id');
+        } else {
+            $ProductVariantIds  = [];
+        }
+
+        return Product::with(['variants' => function($query) use ($ProductVariantIds,$request) {
+            $query->when(count($ProductVariantIds) > 0,function($query) use ($ProductVariantIds) {
+                $query->whereIn('id',ProductVariantPrice::select('id')
+                        ->whereIn('product_variant_one',$ProductVariantIds)
+                        ->orWhereIn('product_variant_two',$ProductVariantIds)
+                        ->orWhereIn('product_variant_three',$ProductVariantIds)
+                        ->pluck('id')
+                    );
+                })
+                ->when($request->price_from && $request->price_to,function($query) use ($request) {
+                    $query->wherebetween('price',[(int)$request->price_from,(int)$request->price_to]);
+                })
+                ->when($request->price_from || $request->price_to,function($query) use ($request) {
+                    if ($request->price_to) {
+                        $query->where('price','<=',$request->price_to);
+                    } else {
+                        $query->where('price','>=',$request->price_from);
+                    }
+                })
+                ->when($request->date,function($query) use ($request) {
+                    $query->whereDate('created_at',Carbon::parse($request->date)->format('Y-m-d'));
+                });
+            }])
+            ->when($request->title,function($query) use($request) {
+                $query->where('title','like', '%' . $request->title . '%');
+            })
+            ->when(isset($ProductVariantIds) || $request->has('price_from') || $request->has('price_to') ,function($query) use($ProductVariantIds,$request) {
+                $query->whereHas('variants',function($query) use ($ProductVariantIds,$request) {
+                    $query->when(count($ProductVariantIds) > 0 ,function($query) use ($ProductVariantIds) {
+                        $query->whereIn('id',ProductVariantPrice::select('id')
+                            ->whereIn('product_variant_one',$ProductVariantIds)
+                            ->orWhereIn('product_variant_two',$ProductVariantIds)
+                            ->orWhereIn('product_variant_three',$ProductVariantIds)
+                            ->pluck('id')
+                        );
+                    })
+                    ->when($request->price_from && $request->price_to,function($query) use ($request) {
+                        $query->wherebetween('price',[(int)$request->price_from,(int)$request->price_to]);
+                    })
+                    ->when($request->price_from || $request->price_to,function($query) use ($request) {
+                        if ($request->price_to) {
+                            $query->where('price','<=',$request->price_to);
+                        } else {
+                            $query->where('price','>=',$request->price_from);
+                        }
+                    })
+                    ->when($request->date,function($query) use ($request) {
+                        $query->whereDate('created_at',Carbon::parse($request->date)->format('Y-m-d'));
+                    });
+                });
+            })
+            ->paginate(2);
     }
 }

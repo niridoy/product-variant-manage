@@ -1,6 +1,7 @@
 <template>
     <section>
         <div class="alert alert-success" v-show="showSuccessMessage" role="alert"> The product has been created successfully! </div>
+         <div class="alert alert-danger" v-show="showSystemErrorMessage" role="alert"> Application error contact with your system administrator ! </div>
          <div class="alert alert-danger" v-show="showErrorMessage" role="alert">
              <h4 class="alert-heading">Validation failed !</h4>
              <ul v-for="(error,index) in errorMessages">
@@ -157,6 +158,7 @@ export default {
                 tags: []
             })
         },
+        //image upload response
         imageUploadSuccess(file, response) {
             this.images.push(response);
         },
@@ -223,58 +225,60 @@ export default {
                this.showSystemErrorMessage = true;
                setTimeout(() => this.showSystemErrorMessage = false, 5000)
             })
+        },
+        loadProduct() {
+            // for 1st varinat
+            let tagOne = [];
+            let tagTwo = [];
+            let tagThree = [];
+
+            this.product.variants.map((varint) => {
+                console.log(varint);
+                if(!tagOne.includes(varint.one.variant) && varint.one.variant != undefined  ){
+                    tagOne.push(varint.one.variant);
+                }
+                if(!tagTwo.includes(varint.two.variant) && varint.two.variant != undefined ){
+                    tagTwo.push(varint.two.variant);
+                }
+                if(!tagThree.includes(varint.three.variant) && varint.three.variant != undefined ){
+                    tagThree.push(varint.three.variant);
+                }
+            })
+
+            if(tagOne.length > 0 ) {
+                this.product_variant.push({
+                    option: this.product.variants[0].one.variant_id,
+                    tags: tagOne
+                })
+            }
+
+            if(tagTwo.length > 0 ) {
+                this.product_variant.push({
+                    option: this.product.variants[0].two.variant_id,
+                    tags: tagTwo
+                })
+            }
+
+            if(tagThree.length > 0 ) {
+                this.product_variant.push({
+                    option: this.product.variants[0].three.variant_id,
+                    tags: tagThree
+                })
+            }
+
+            this.product.images.map((image) => {
+                console.log(image)
+                var file = { size: 102400, name: "Product Images", type: "image/png" };
+                var url = '/storage/'+image.file_path;
+                this.images.push(image.file_path);
+                this.$refs.myVueDropzone.manuallyAddFile(file, url);
+            })
+
+            this.checkVariant();
         }
     },
     mounted() {
-
-        // for 1st varinat
-        let tagOne = [];
-        let tagTwo = [];
-        let tagThree = [];
-
-        this.product.variants.map((varint) => {
-            console.log(varint);
-            if(!tagOne.includes(varint.one.variant) && varint.one.variant != undefined  ){
-                tagOne.push(varint.one.variant);
-            }
-            if(!tagTwo.includes(varint.two.variant) && varint.two.variant != undefined ){
-                tagTwo.push(varint.two.variant);
-            }
-            if(!tagThree.includes(varint.three.variant) && varint.three.variant != undefined ){
-                tagThree.push(varint.three.variant);
-            }
-        })
-
-        if(tagOne.length > 0 ) {
-            this.product_variant.push({
-                option: this.product.variants[0].one.variant_id,
-                tags: tagOne
-            })
-        }
-
-        if(tagTwo.length > 0 ) {
-            this.product_variant.push({
-                option: this.product.variants[0].two.variant_id,
-                tags: tagTwo
-            })
-        }
-
-        if(tagThree.length > 0 ) {
-            this.product_variant.push({
-                option: this.product.variants[0].three.variant_id,
-                tags: tagThree
-            })
-        }
-
-        this.product.images.map((image) => {
-            console.log(image)
-            var file = { size: 102400, name: "Product Images", type: "image/png" };
-            var url = '/storage/'+image.file_path;
-            this.images.push(image.file_path);
-            this.$refs.myVueDropzone.manuallyAddFile(file, url);
-        })
-
-        this.checkVariant();
+        this.loadProduct();
         console.log('Component mounted.')
     }
 }

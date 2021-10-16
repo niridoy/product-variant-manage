@@ -2,7 +2,7 @@
     <section>
         <div class="alert alert-success" v-show="showSuccessMessage" role="alert"> The product has been created successfully! </div>
         <div class="alert alert-danger" v-show="showSystemErrorMessage" role="alert"> Application error contact with your system administrator ! </div>
-         <div class="alert alert-danger" v-show="showErrorMessage" role="alert">
+        <div class="alert alert-danger" v-show="showErrorMessage" role="alert">
              <h4 class="alert-heading">Validation failed !</h4>
              <ul v-for="(error,index) in errorMessages">
                  <li>{{ error }}</li>
